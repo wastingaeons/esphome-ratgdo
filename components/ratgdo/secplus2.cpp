@@ -14,6 +14,8 @@ namespace esphome {
 namespace ratgdo {
 namespace secplus2 {
 
+    static const uint8_t MAX_CODES_WITHOUT_FLASH_WRITE = 10;
+
     static const char* const TAG = "ratgdo_secplus2";
 
     void Secplus2::setup(RATGDOComponent* ratgdo, Scheduler* scheduler, InternalGPIOPin* rx_pin, InternalGPIOPin* tx_pin)
@@ -49,6 +51,42 @@ namespace secplus2 {
         ESP_LOGCONFIG(TAG, "  Client ID: %d", this->client_id_);
         ESP_LOGCONFIG(TAG, "  Protocol: SEC+ v2");
     }
+
+
+    void Secplus2::sync()
+    {
+        auto sync_step = [=]() {
+            if (*this->ratgdo_->door_state == DoorState::UNKNOWN) {
+                this->query_action(QueryAction::STATUS);
+                return RetryResult::RETRY;
+            }
+            if (*this->ratgdo_->openings == 0) {
+                this->query_action(QueryAction::OPENINGS);
+                return RetryResult::RETRY;
+            }
+            return RetryResult::DONE;
+        };
+
+        const uint8_t MAX_ATTEMPTS = 10;
+        this->scheduler_->set_retry(this->ratgdo_, "",
+            500, MAX_ATTEMPTS, [=](uint8_t r) {
+                auto result = sync_step();
+                if (result == RetryResult::RETRY) {
+                    if (r == MAX_ATTEMPTS - 2 && *this->ratgdo_->door_state == DoorState::UNKNOWN) { // made a few attempts and no progress (door state is the first sync request)
+                        // increment rolling code counter by some amount in case we crashed without writing to flash the latest value
+                        this->increment_rolling_code_counter(MAX_CODES_WITHOUT_FLASH_WRITE);
+                    }
+                    if (r == 0) {
+                        // this was last attempt, notify of sync failure
+                        ESP_LOGD(TAG, "Triggering sync failed actions.");
+                        this->ratgdo_->sync_failed = true;
+                    }
+                }
+                return result;
+            },
+            1.5f);
+    }
+
 
     void Secplus2::light_action(LightAction action)
     {
@@ -92,8 +130,6 @@ namespace secplus2 {
             return ProtocolArgs(RollingCodeCounter{std::addressof(this->rolling_code_counter_)});
         } else if (args.tag == Tag::set_rolling_code_counter) {
             this->set_rolling_code_counter(args.value.set_rolling_code_counter.counter);
-        } else if (args.tag == Tag::increment_rolling_code_counter) {
-            this->increment_rolling_code_counter(args.value.increment_rolling_code_counter.increment);
         } else if (args.tag == Tag::set_client_id) {
             this->set_client_id(args.value.set_client_id.client_id);
         }
