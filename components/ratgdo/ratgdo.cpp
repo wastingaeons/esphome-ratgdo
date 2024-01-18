@@ -96,7 +96,7 @@ namespace ratgdo {
     void RATGDOComponent::received(const DoorState door_state) 
     {
 
-        ESP_LOGD(TAG, "Door state=%s", DoorState_to_string(door_state));
+        //ESP_LOGD(TAG, "Door state=%s", DoorState_to_string(door_state));
 
         auto prev_door_state = *this->door_state;
 
@@ -191,13 +191,13 @@ namespace ratgdo {
     void RATGDOComponent::received(const LightState light_state) 
     {
         this->light_state = light_state;
-        ESP_LOGD(TAG, "Light state=%s", LightState_to_string(light_state));
+        //ESP_LOGD(TAG, "Light state=%s", LightState_to_string(light_state));
     }
 
     void RATGDOComponent::received(const LockState lock_state) 
     {
         this->lock_state = lock_state;
-        ESP_LOGD(TAG, "Lock state=%s", LockState_to_string(lock_state));
+        //ESP_LOGD(TAG, "Lock state=%s", LockState_to_string(lock_state));
     }
 
     void RATGDOComponent::received(const ObstructionState obstruction_state)
@@ -207,7 +207,7 @@ namespace ratgdo {
             // This isn't very fast to update, but its still better
             // than nothing in the case the obstruction sensor is not
             // wired up.
-            ESP_LOGD(TAG, "Obstruction: state=%s", ObstructionState_to_string(*this->obstruction_state));
+            //ESP_LOGD(TAG, "Obstruction: state=%s", ObstructionState_to_string(*this->obstruction_state));
         }
     }
 
@@ -215,13 +215,13 @@ namespace ratgdo {
     void RATGDOComponent::received(const MotorState motor_state)
     {
         this->motor_state = motor_state;
-        ESP_LOGD(TAG, "Motor: state=%s", MotorState_to_string(*this->motor_state));
+        //ESP_LOGD(TAG, "Motor: state=%s", MotorState_to_string(*this->motor_state));
     }
 
     void RATGDOComponent::received(const ButtonState button_state)
     {
         this->button_state = button_state;
-        ESP_LOGD(TAG, "Button state=%s", ButtonState_to_string(*this->button_state));
+        //ESP_LOGD(TAG, "Button state=%s", ButtonState_to_string(*this->button_state));
     }
     
     void RATGDOComponent::received(const MotionState motion_state)
@@ -235,7 +235,7 @@ namespace ratgdo {
                 this->query_status();
             }
         }
-        ESP_LOGD(TAG, "Motion: %s", MotionState_to_string(*this->motion_state));
+        //ESP_LOGD(TAG, "Motion: %s", MotionState_to_string(*this->motion_state));
     }
 
     void RATGDOComponent::received(const LightAction light_action) 
@@ -247,7 +247,7 @@ namespace ratgdo {
         } else if (light_action == LightAction::TOGGLE) {
             this->light_state = light_state_toggle(*this->light_state);
         }
-        ESP_LOGD(TAG, "Light cmd=%s state=%s",
+        //ESP_LOGD(TAG, "Light cmd=%s state=%s",
             LightAction_to_string(light_action),
             LightState_to_string(*this->light_state)
         );
@@ -257,15 +257,15 @@ namespace ratgdo {
     {
         if (openings.flag == 0 || *this->openings != 0) {
             this->openings = openings.count;
-            ESP_LOGD(TAG, "Openings: %d", *this->openings);
+            //ESP_LOGD(TAG, "Openings: %d", *this->openings);
         } else {
-            ESP_LOGD(TAG, "Ignoring openings, not from our request");
+            //ESP_LOGD(TAG, "Ignoring openings, not from our request");
         }
     }
 
     void RATGDOComponent::received(const TimeToClose ttc)
     {
-        ESP_LOGD(TAG, "Time to close (TTC): %ds", ttc.seconds);
+        //ESP_LOGD(TAG, "Time to close (TTC): %ds", ttc.seconds);
     }
 
     void RATGDOComponent::schedule_door_position_sync(float update_period)
@@ -301,13 +301,13 @@ namespace ratgdo {
 
     void RATGDOComponent::set_opening_duration(float duration)
     {
-        ESP_LOGD(TAG, "Set opening duration: %.1fs", duration);
+        //ESP_LOGD(TAG, "Set opening duration: %.1fs", duration);
         this->opening_duration = duration;
     }
 
     void RATGDOComponent::set_closing_duration(float duration)
     {
-        ESP_LOGD(TAG, "Set closing duration: %.1fs", duration);
+        //ESP_LOGD(TAG, "Set closing duration: %.1fs", duration);
         this->closing_duration = duration;
     }
 
@@ -481,7 +481,7 @@ namespace ratgdo {
 
         auto delta = position - *this->door_position;
         if (delta == 0) {
-            ESP_LOGD(TAG, "Door is already at position %.2f", position);
+            //ESP_LOGD(TAG, "Door is already at position %.2f", position);
             return;
         }
 
@@ -493,7 +493,7 @@ namespace ratgdo {
 
         auto operation_time = 1000 * duration * delta;
         this->door_move_delta = delta;
-        ESP_LOGD(TAG, "Moving to position %.2f in %.1fs", position, operation_time / 1000.0);
+        //ESP_LOGD(TAG, "Moving to position %.2f in %.1fs", position, operation_time / 1000.0);
 
         this->door_action(delta > 0 ? DoorAction::OPEN : DoorAction::CLOSE);
         set_timeout("move_to_position", operation_time, [=] {
@@ -509,7 +509,7 @@ namespace ratgdo {
     void RATGDOComponent::cancel_position_sync_callbacks()
     {
         if (this->door_start_moving != 0) {
-            ESP_LOGD(TAG, "Cancelling position callbacks");
+            //ESP_LOGD(TAG, "Cancelling position callbacks");
             cancel_timeout("move_to_position");
             cancel_retry("position_sync_while_moving");
 
