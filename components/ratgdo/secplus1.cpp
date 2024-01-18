@@ -82,7 +82,7 @@ namespace secplus1 {
             });
             return;
         } else if (this->wall_panel_emulation_state_ == WallPanelEmulationState::RUNNING) {
-            // ESP_LOG2(TAG, "[Wall panel emulation] Sending byte: [%02X]", secplus1_states[index]);
+            // //ESP_LOG2(TAG, "[Wall panel emulation] Sending byte: [%02X]", secplus1_states[index]);
 
             if (index < 15 || !this->do_transmit_if_pending()) {
                 this->transmit_byte(secplus1_states[index], true);
@@ -217,19 +217,19 @@ namespace secplus1 {
                 this->last_rx_ = millis();
 
                 if(ser_byte < 0x30 || ser_byte > 0x3A){
-                    ESP_LOG2(TAG, "[%d] Ignoring byte [%02X], baud: %d", millis(), ser_byte, this->sw_serial_.baudRate());
+                    //ESP_LOG2(TAG, "[%d] Ignoring byte [%02X], baud: %d", millis(), ser_byte, this->sw_serial_.baudRate());
                     byte_count = 0;
                     continue;
                 }
                 rx_packet[byte_count++] = ser_byte;
-                ESP_LOG2(TAG, "[%d] Received byte: [%02X]", millis(), ser_byte);
+                //ESP_LOG2(TAG, "[%d] Received byte: [%02X]", millis(), ser_byte);
                 reading_msg = true;
 
                 if (ser_byte == 0x37 || (ser_byte >= 0x30 && ser_byte <= 0x35)) {
                     rx_packet[byte_count++] = 0;
                     reading_msg = false;
                     byte_count = 0;
-                    ESP_LOG2(TAG, "[%d] Received command: [%02X]", millis(), rx_packet[0]);
+                    //ESP_LOG2(TAG, "[%d] Received command: [%02X]", millis(), rx_packet[0]);
                     return this->decode_packet(rx_packet);
                 }
 
@@ -241,7 +241,7 @@ namespace secplus1 {
                 uint8_t ser_byte = this->sw_serial_.read();
                 this->last_rx_ = millis();
                 rx_packet[byte_count++] = ser_byte;
-                ESP_LOG2(TAG, "[%d] Received byte: [%02X]", millis(), ser_byte);
+                //ESP_LOG2(TAG, "[%d] Received byte: [%02X]", millis(), ser_byte);
 
                 if (byte_count == RX_LENGTH) {
                     reading_msg = false;
@@ -266,12 +266,12 @@ namespace secplus1 {
 
     void Secplus1::print_rx_packet(const RxPacket& packet) const
     {
-        ESP_LOG2(TAG, "[%d] Received packet: [%02X %02X]", millis(), packet[0], packet[1]);
+        //ESP_LOG2(TAG, "[%d] Received packet: [%02X %02X]", millis(), packet[0], packet[1]);
     }
 
     void Secplus1::print_tx_packet(const TxPacket& packet) const
     {
-        ESP_LOG2(TAG, "[%d] Sending packet: [%02X %02X]", millis(), packet[0], packet[1]);
+        //ESP_LOG2(TAG, "[%d] Sending packet: [%02X %02X]", millis(), packet[0], packet[1]);
     }
 
 
@@ -440,7 +440,7 @@ namespace secplus1 {
         if (!enable_rx) {
             this->sw_serial_.enableIntTx(true);
         }
-        ESP_LOG2(TAG, "[%d] Sent byte: [%02X]", millis(), value);
+       // //ESP_LOG2(TAG, "[%d] Sent byte: [%02X]", millis(), value);
     }
 
 } // namespace secplus1
