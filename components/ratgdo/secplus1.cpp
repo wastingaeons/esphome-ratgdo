@@ -20,6 +20,9 @@ namespace secplus1 {
         this->rx_pin_ = rx_pin;
 
         this->sw_serial_.begin(1200, SWSERIAL_8E1, rx_pin->get_pin(), tx_pin->get_pin(), true);
+
+
+        this->traits_.set_features(HAS_DOOR_STATUS | HAS_LIGHT_TOGGLE |  HAS_LOCK_TOGGLE);
     }
 
 
@@ -85,7 +88,7 @@ namespace secplus1 {
             // //ESP_LOG2(TAG, "[Wall panel emulation] Sending byte: [%02X]", secplus1_states[index]);
 
             if (index < 15 || !this->do_transmit_if_pending()) {
-                this->transmit_byte(secplus1_states[index], true);
+                this->transmit_byte(secplus1_states[index]);
                 // gdo response simulation for testing
                 // auto resp = secplus1_states[index] == 0x39 ? 0x00 :
                 //             secplus1_states[index] == 0x3A ? 0x5C :
@@ -149,10 +152,17 @@ namespace secplus1 {
             if (this->door_state == DoorState::CLOSED || this->door_state == DoorState::CLOSING) {
                 this->toggle_door();
             } else if (this->door_state == DoorState::STOPPED) {
-                this->toggle_door(); // this starts closing door
-                // this changes direction of door
-                this->scheduler_->set_timeout(this->ratgdo_, "", double_toggle_delay, [=] {
-                    this->toggle_door();
+                this->toggle_door(); // this starts closing door            
+                this->on_door_state_([=](DoorState s) {
+                    if (s==DoorState::CLOSING) {
+                        // this changes direction of the door on some openers, on others it stops it
+                        this->toggle_door();
+                        this->on_door_state_([=](DoorState s) {
+                            if (s==DoorState::STOPPED) {
+                                this->toggle_door();
+                            }
+                        });
+                    }
                 });
             }
         } else if (action == DoorAction::CLOSE) {
@@ -161,8 +171,10 @@ namespace secplus1 {
             } else if (this->door_state == DoorState::OPENING) {
                 this->toggle_door(); // this switches to stopped
                 // another toggle needed to close
-                this->scheduler_->set_timeout(this->ratgdo_, "", double_toggle_delay, [=] {
-                    this->toggle_door();
+                this->on_door_state_([=](DoorState s) {
+                    if (s==DoorState::STOPPED) {
+                        this->toggle_door();
+                    }
                 });
             } else if (this->door_state == DoorState::STOPPED) {
                 this->toggle_door();
@@ -172,9 +184,12 @@ namespace secplus1 {
                 this->toggle_door();
             } else if (this->door_state == DoorState::CLOSING) {
                 this->toggle_door(); // this switches to opening
+
                 // another toggle needed to stop
-                this->scheduler_->set_timeout(this->ratgdo_, "", double_toggle_delay, [=] {
-                    this->toggle_door();
+                this->on_door_state_([=](DoorState s) {
+                    if (s==DoorState::OPENING) {
+                        this->toggle_door();
+                    }
                 });
             }
         }
@@ -316,9 +331,15 @@ namespace secplus1 {
                 door_state = DoorState::UNKNOWN;
             }
 
+            if (this->maybe_door_state != door_state) {
+                this->on_door_state_.trigger(door_state);
+            }
+
             if (!this->is_0x37_panel_ && door_state != this->maybe_door_state) {
                 this->maybe_door_state = door_state;
+                ESP_LOG1(TAG, "Door maybe %s, waiting for 2nd status message to confirm", DoorState_to_string(door_state));
             } else {
+                this->maybe_door_state = door_state;
                 this->door_state = door_state;
                 if (this->door_state == DoorState::STOPPED || this->door_state == DoorState::OPEN || this->door_state == DoorState::CLOSED) {
                     this->door_moving_ = false;
@@ -334,7 +355,7 @@ namespace secplus1 {
             } else {
                 // inject door status request
                 if (door_moving_ || (millis() - this->last_status_query_ > 10000)) {
-                    this->transmit_byte(static_cast<uint8_t>(CommandType::QUERY_DOOR_STATUS), true);
+                    this->transmit_byte(static_cast<uint8_t>(CommandType::QUERY_DOOR_STATUS));
                     this->last_status_query_ = millis();
                 }
             }
@@ -430,8 +451,9 @@ namespace secplus1 {
         return cmd;
     }
 
-    void Secplus1::transmit_byte(uint32_t value, bool enable_rx)
+    void Secplus1::transmit_byte(uint32_t value)
     {
+        bool enable_rx = (value == 0x38) || (value == 0x39) || (value==0x3A);
         if (!enable_rx) {
             this->sw_serial_.enableIntTx(false);
         }

@@ -19,7 +19,7 @@
 
 #include "observable.h"
 #include "callbacks.h"
-#include "enum.h"
+#include "macros.h"
 #include "ratgdo_state.h"
 #include "protocol.h"
 
@@ -77,7 +77,7 @@ namespace ratgdo {
         observable<ButtonState> button_state { ButtonState::UNKNOWN };
         observable<MotionState> motion_state { MotionState::UNKNOWN };
 
-        OnceCallbacks<void(DoorState)> door_state_received;
+        OnceCallbacks<void(DoorState)> on_door_state_;
 
         observable<bool> sync_failed { false };
 

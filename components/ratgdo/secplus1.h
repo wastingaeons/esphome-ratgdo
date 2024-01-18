@@ -83,6 +83,8 @@ namespace secplus1 {
 
         Result call(Args args);
 
+        const ProtocolTraits& traits() const { return this->traits_; }
+
     protected:
         void wall_panel_emulation(size_t index = 0);
 
@@ -98,7 +100,7 @@ namespace secplus1 {
         optional<CommandType> pop_pending_tx();
         bool do_transmit_if_pending();
         void enqueue_command_pair(CommandType cmd);
-        void transmit_byte(uint32_t value, bool enable_rx = false);
+        void transmit_byte(uint32_t value);
 
         void toggle_light();
         void toggle_lock();
@@ -113,6 +115,8 @@ namespace secplus1 {
         LockState maybe_lock_state { LockState::UNKNOWN };
         DoorState maybe_door_state { DoorState::UNKNOWN };
 
+        OnceCallbacks<void(DoorState)> on_door_state_;
+
         bool door_moving_ { false };
 
         bool wall_panel_starting_ { false };
@@ -124,6 +128,8 @@ namespace secplus1 {
         uint32_t last_rx_ { 0 };
         uint32_t last_tx_ { 0 };
         uint32_t last_status_query_ { 0 };
+
+        ProtocolTraits traits_;
 
         SoftwareSerial sw_serial_;
 
