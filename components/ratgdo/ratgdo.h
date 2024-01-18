@@ -77,7 +77,7 @@ namespace ratgdo {
         observable<ButtonState> button_state { ButtonState::UNKNOWN };
         observable<MotionState> motion_state { MotionState::UNKNOWN };
 
-        OnceCallbacks<void(DoorState)> door_state_received;
+        OnceCallbacks<void(DoorState)> on_door_state_;
 
         observable<bool> sync_failed { false };
 
